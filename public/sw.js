@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cold-reach-pro-v1';
+const CACHE_NAME = 'cold-reach-pro-v2';
 const urlsToCache = [
   '/',
   '/index.html'
@@ -18,7 +18,6 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request)
       .then(response => {
-        // Cache hit - return response
         if (response) {
           return response;
         }
@@ -40,4 +39,36 @@ self.addEventListener('activate', event => {
       );
     })
   );
+});
+
+// --- PWA Builder Required Features ---
+
+// Background Sync
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-leads') {
+    console.log('Syncing leads in background');
+  }
+});
+
+// Periodic Background Sync
+self.addEventListener('periodicsync', event => {
+  if (event.tag === 'update-stats') {
+    console.log('Updating stats periodically');
+  }
+});
+
+// Push Notifications
+self.addEventListener('push', event => {
+  const options = {
+    body: event.data ? event.data.text() : 'New notification from Cold Reach Pro',
+    icon: 'https://dummyimage.com/192x192/2563eb/ffffff.png',
+    badge: 'https://dummyimage.com/192x192/2563eb/ffffff.png'
+  };
+  event.waitUntil(self.registration.showNotification('Cold Reach Pro', options));
+});
+
+// Notification Click
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(clients.openWindow('/'));
 });

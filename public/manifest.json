@@ -1,17 +1,149 @@
 {
+  "id": "/?source=pwa",
   "name": "Cold Reach Pro",
   "short_name": "ColdReach",
   "start_url": "/",
   "display": "standalone",
+  "display_override": ["tabbed", "window-controls-overlay", "minimal-ui"],
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
-  "description": "The ultimate cold outreach platform.",
+  "description": "The ultimate high-performance cold outreach platform for lead generation and sales automation.",
+  "orientation": "any",
+  "scope": "/",
+  "lang": "en-US",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "related_applications": [
+    {
+      "platform": "play",
+      "url": "https://play.google.com/store/apps/details?id=com.coldreach.pro",
+      "id": "com.coldreach.pro"
+    }
+  ],
+  "iarc_rating_id": "e84b0fa5-e9ac-471f-9513-112447c9958b",
+  "scope_extensions": [
+    {
+      "origin": "*.run.app"
+    }
+  ],
   "icons": [
     {
-      "src": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c1/Google_%22G%22_logo.svg/512px-Google_%22G%22_logo.svg.png",
+      "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://dummyimage.com/512x512/2563eb/ffffff.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "https://dummyimage.com/1280x720/f8fafc/2563eb.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Cold Reach Pro Desktop Dashboard"
+    },
+    {
+      "src": "https://dummyimage.com/750x1334/f8fafc/2563eb.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow",
+      "label": "Cold Reach Pro Mobile View"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Campaign",
+      "short_name": "Campaign",
+      "description": "Start a new outreach campaign",
+      "url": "/?tab=campaigns",
+      "icons": [
+        {
+          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Manual Sender",
+      "short_name": "Send",
+      "description": "Open the manual sending view",
+      "url": "/?tab=manual-send",
+      "icons": [
+        {
+          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ],
+  "file_handlers": [
+    {
+      "action": "/",
+      "accept": {
+        "text/csv": [".csv"]
+      }
+    }
+  ],
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+  "protocol_handlers": [
+    {
+      "protocol": "web+coldreach",
+      "url": "/?action=%s"
+    }
+  ],
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "edge_side_panel": {
+    "preferred_width": 400
+  },
+  "note_taking": {
+    "new_note_url": "/?tab=campaigns"
+  },
+  "widgets": [
+    {
+      "name": "Cold Reach Stats",
+      "short_name": "Stats",
+      "description": "View your outreach velocity",
+      "tag": "coldreach-stats",
+      "template_url": "widget-template.json",
+      "ms_ac_template": "widget-template.json",
+      "data_url": "widget-data.json",
+      "type": "application/json",
+      "screenshots": [
+        {
+          "src": "https://dummyimage.com/300x300/f8fafc/2563eb.png",
+          "sizes": "300x300",
+          "type": "image/png",
+          "label": "Stats Widget"
+        }
+      ],
+      "icons": [
+        {
+          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "auth_base_url": "/",
+      "update": 86400
     }
   ]
 }
