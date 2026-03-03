@@ -9,7 +9,7 @@
     "home_tab": {
       "icons": [
         {
-          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=192",
           "sizes": "192x192",
           "type": "image/png"
         }
@@ -36,27 +36,28 @@
   "iarc_rating_id": "e84b0fa5-e9ac-471f-9513-112447c9958b",
   "scope_extensions": [
     {
-      "origin": "https://*.run.app"
+      "origin": "https://ais-pre-qczy7wurnzncjmob3nojep-501390134835.europe-west2.run.app"
     },
     {
-      "origin": "https://*.google.com"
+      "origin": "https://auth.coldreach.com"
     }
   ],
+  "handle_links": "preferred",
   "icons": [
     {
-      "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+      "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=192",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://dummyimage.com/512x512/2563eb/ffffff.png",
+      "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "https://dummyimage.com/512x512/2563eb/ffffff.png",
+      "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=512",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -64,14 +65,14 @@
   ],
   "screenshots": [
     {
-      "src": "https://dummyimage.com/1280x720/f8fafc/2563eb.png",
+      "src": "https://placehold.co/1280x720/f8fafc/2563eb/png?text=Cold+Reach+Desktop",
       "sizes": "1280x720",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Cold Reach Pro Desktop Dashboard"
     },
     {
-      "src": "https://dummyimage.com/750x1334/f8fafc/2563eb.png",
+      "src": "https://placehold.co/750x1334/f8fafc/2563eb/png?text=Cold+Reach+Mobile",
       "sizes": "750x1334",
       "type": "image/png",
       "form_factor": "narrow",
@@ -86,7 +87,7 @@
       "url": "/?tab=campaigns",
       "icons": [
         {
-          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=192",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any"
@@ -100,7 +101,7 @@
       "url": "/?tab=manual-send",
       "icons": [
         {
-          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=192",
           "sizes": "192x192",
           "type": "image/png",
           "purpose": "any"
@@ -152,7 +153,7 @@
       "type": "application/json",
       "screenshots": [
         {
-          "src": "https://dummyimage.com/300x300/f8fafc/2563eb.png",
+          "src": "https://placehold.co/300x300/f8fafc/2563eb/png?text=Stats",
           "sizes": "300x300",
           "type": "image/png",
           "label": "Stats Widget"
@@ -160,7 +161,7 @@
       ],
       "icons": [
         {
-          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "src": "https://api.dicebear.com/9.x/initials/png?seed=CR&backgroundColor=2563eb&textColor=ffffff&size=192",
           "sizes": "192x192",
           "type": "image/png"
         }
