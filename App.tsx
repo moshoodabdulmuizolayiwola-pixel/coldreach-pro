@@ -69,23 +69,21 @@ const App: React.FC = () => {
   // Save data specifically for the current user
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(`cr_leads_${currentUser.id}`, JSON.stringify(leads));
+      // Debounce the heavy JSON.stringify operation to prevent app hanging during rapid auto-clicking
+      const timer = setTimeout(() => {
+        localStorage.setItem(`cr_leads_${currentUser.id}`, JSON.stringify(leads));
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [leads, currentUser]);
 
   useEffect(() => {
-    const handleBeforeInstallPrompt = (e: Event) => {
-      e.preventDefault();
-      setDeferredPrompt(e);
-    };
-    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
-  }, []);
-
-  useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(`cr_campaign_${currentUser.id}`, JSON.stringify(campaign));
-      localStorage.setItem(`cr_plan_${currentUser.id}`, userPlan);
+      const timer = setTimeout(() => {
+        localStorage.setItem(`cr_campaign_${currentUser.id}`, JSON.stringify(campaign));
+        localStorage.setItem(`cr_plan_${currentUser.id}`, userPlan);
+      }, 300);
+      return () => clearTimeout(timer);
     }
   }, [campaign, userPlan, currentUser]);
 
@@ -177,16 +175,14 @@ const App: React.FC = () => {
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       {/* Download App Floating Button (Mobile/Tablet only) */}
       <button 
-        onClick={async () => {
-          if (deferredPrompt) {
-            deferredPrompt.prompt();
-            const { outcome } = await deferredPrompt.userChoice;
-            if (outcome === 'accepted') {
-              setDeferredPrompt(null);
-            }
-          } else {
-            alert("To install the app, tap the share icon and select 'Add to Home Screen' (iOS) or 'Install App' (Android).");
-          }
+        onClick={() => {
+          // Real APK download to device
+          const link = document.createElement('a');
+          link.href = '/ColdReachPro.apk'; // Ensure you place ColdReachPro.apk in your public folder
+          link.download = 'ColdReachPro.apk';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
         }}
         className="lg:hidden fixed top-20 right-4 z-[100] bg-blue-600 text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 animate-bounce"
       >

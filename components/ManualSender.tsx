@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Lead, LeadStatus, User } from '../types.ts';
 import { buildGmailComposeLink } from '../services/geminiService.ts';
 
@@ -13,6 +13,7 @@ interface ManualSenderProps {
 const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUpdate, user }) => {
   const [filter, setFilter] = useState<'all' | LeadStatus.TO_SEND | LeadStatus.SENT>('all');
   const [processingLeads, setProcessingLeads] = useState<Set<string>>(new Set());
+  const processingRef = useRef<Set<string>>(new Set());
   
   const filteredLeads = useMemo(() => 
     leads.filter(l => filter === 'all' || l.status === filter)
@@ -23,24 +24,29 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
    * Priority: Browser Action (Link Opening) must be immediate.
    */
   const handleSend = useCallback((lead: Lead) => {
-    // Prevent double-clicks from auto-clickers
-    if (processingLeads.has(lead.id)) return;
-    
-    setProcessingLeads(prev => new Set(prev).add(lead.id));
+    // 1. Instant lock (bypasses React render cycle)
+    if (processingRef.current.has(lead.id)) return;
+    processingRef.current.add(lead.id);
 
-    // 1. Instant calculation (Synchronous)
+    // 2. Instant calculation
     const outreachUrl = buildGmailComposeLink(lead, campaign.subject, campaign.body);
     
-    // 2. IMMEDIATE TRIGGER: Primary action must be unblocked by any state updates
+    // 3. IMMEDIATE TRIGGER: Fire intent BEFORE any React state updates
     if (outreachUrl.startsWith('mailto:')) {
-      window.location.href = outreachUrl;
+      // Use hidden iframe to prevent page unload/reload lag (makes it < 1ms)
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = outreachUrl;
+      document.body.appendChild(iframe);
+      setTimeout(() => document.body.removeChild(iframe), 1000);
     } else {
-      // Desktop: Open in new tab instantly
       const newWin = window.open(outreachUrl, '_blank');
-      if (!newWin) window.location.href = outreachUrl; // Fallback if popup blocked
+      if (!newWin) window.location.href = outreachUrl;
     }
     
-    // 3. DEFERRED STATE: Update tracking AFTER the intent is handed to the OS/Browser
+    // 4. Update UI state asynchronously so it doesn't block the intent
+    setProcessingLeads(prev => new Set(prev).add(lead.id));
+    
     setTimeout(() => {
       onStatusUpdate(lead.id, LeadStatus.SENT);
       
@@ -57,24 +63,26 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
         console.error("ManualSender: Velocity tracking failed.");
       }
       
-      // Remove from processing after a short delay to ensure UI updates
       setTimeout(() => {
+        processingRef.current.delete(lead.id);
         setProcessingLeads(prev => {
           const next = new Set(prev);
           next.delete(lead.id);
           return next;
         });
       }, 1000);
-    }, 0);
-  }, [campaign.subject, campaign.body, onStatusUpdate, processingLeads, user.id]);
+    }, 10);
+  }, [campaign.subject, campaign.body, onStatusUpdate, user.id]);
 
   const handleBrowse = useCallback((lead: Lead) => {
-    if (processingLeads.has(lead.id)) return;
-    setProcessingLeads(prev => new Set(prev).add(lead.id));
+    if (processingRef.current.has(lead.id)) return;
+    processingRef.current.add(lead.id);
 
     const url = lead.website?.startsWith('http') ? lead.website : `https://${lead.website}`;
     window.open(url, '_blank');
 
+    setProcessingLeads(prev => new Set(prev).add(lead.id));
+
     setTimeout(() => {
       onStatusUpdate(lead.id, LeadStatus.SENT);
       
@@ -92,14 +100,15 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
       }
       
       setTimeout(() => {
+        processingRef.current.delete(lead.id);
         setProcessingLeads(prev => {
           const next = new Set(prev);
           next.delete(lead.id);
           return next;
         });
       }, 1000);
-    }, 0);
-  }, [onStatusUpdate, processingLeads, user.id]);
+    }, 10);
+  }, [onStatusUpdate, user.id]);
 
   const formatDate = (dateStr?: string) => {
     if (!dateStr) return '';
