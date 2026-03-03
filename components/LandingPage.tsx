@@ -63,8 +63,10 @@ const LandingPage: React.FC<LandingPageProps> = ({ onEnter }) => {
           <div className="relative bg-white border border-slate-200 rounded-[2.5rem] p-3 lg:p-6 shadow-2xl shadow-slate-200/50 max-w-5xl mx-auto overflow-hidden">
              <div className="bg-slate-50 border border-slate-100 rounded-[2rem] aspect-[16/9] flex items-center justify-center overflow-hidden group relative">
                 <img 
-                  src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=2426&ixlib=rb-4.0.3" 
+                  src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?auto=format&fit=crop&q=80&w=1200&ixlib=rb-4.0.3" 
                   alt="ColdReach Dashboard Interface" 
+                  fetchpriority="high"
+                  decoding="async"
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-1000 brightness-[0.98]" 
                 />
                 <div className="absolute inset-0 bg-gradient-to-tr from-blue-600/10 to-transparent pointer-events-none"></div>

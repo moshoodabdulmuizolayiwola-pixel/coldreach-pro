@@ -1,14 +1,16 @@
 
-import React, { useState, useEffect, useCallback } from 'react';
-import Sidebar from './components/Sidebar.tsx';
-import Dashboard from './components/Dashboard.tsx';
-import LeadManagement from './components/LeadManagement.tsx';
-import CampaignBuilder from './components/CampaignBuilder.tsx';
-import ManualSender from './components/ManualSender.tsx';
-import Settings from './components/Settings.tsx';
-import LandingPage from './components/LandingPage.tsx';
-import AuthForms from './components/AuthForms.tsx';
+import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { PlanStatus, Lead, LeadStatus, User } from './types.ts';
+
+// Lazy load components to improve initial load time
+const Sidebar = lazy(() => import('./components/Sidebar.tsx'));
+const Dashboard = lazy(() => import('./components/Dashboard.tsx'));
+const LeadManagement = lazy(() => import('./components/LeadManagement.tsx'));
+const CampaignBuilder = lazy(() => import('./components/CampaignBuilder.tsx'));
+const ManualSender = lazy(() => import('./components/ManualSender.tsx'));
+const Settings = lazy(() => import('./components/Settings.tsx'));
+const LandingPage = lazy(() => import('./components/LandingPage.tsx'));
+const AuthForms = lazy(() => import('./components/AuthForms.tsx'));
 
 const BASE_STORAGE_KEYS = {
   HAS_ENTERED: 'cr_pro_session_active_v2',
@@ -38,7 +40,11 @@ const App: React.FC = () => {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [isInstalled, setIsInstalled] = useState(() => {
+    return localStorage.getItem('cr_app_installed') === 'true' || 
+           window.matchMedia('(display-mode: standalone)').matches || 
+           (window.navigator as any).standalone;
+  });
 
   // 3. User-Specific Data State
   const [leads, setLeads] = useState<Lead[]>([]);
@@ -106,6 +112,7 @@ const App: React.FC = () => {
 
     const handleAppInstalled = () => {
       setIsInstalled(true);
+      localStorage.setItem('cr_app_installed', 'true');
     };
     window.addEventListener('appinstalled', handleAppInstalled);
 
@@ -161,7 +168,11 @@ const App: React.FC = () => {
   };
 
   if (showLanding) {
-    return <LandingPage onEnter={handleEnterPlatform} />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+        <LandingPage onEnter={handleEnterPlatform} />
+      </Suspense>
+    );
   }
 
   if (!currentUser) {
@@ -173,7 +184,9 @@ const App: React.FC = () => {
         >
           ← Return to Home
         </button>
-        <AuthForms initialMode={authMode} onAuthSuccess={handleAuthSuccess} onNavigate={() => {}} />
+        <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+          <AuthForms initialMode={authMode} onAuthSuccess={handleAuthSuccess} onNavigate={() => {}} />
+        </Suspense>
       </div>
     );
   }
@@ -199,24 +212,36 @@ const App: React.FC = () => {
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       {/* Download App Floating Button (Mobile/Tablet only) */}
       {!isInstalled && (
-        <button 
-          onClick={async () => {
-            if (deferredPrompt) {
-              deferredPrompt.prompt();
-              const { outcome } = await deferredPrompt.userChoice;
-              if (outcome === 'accepted') {
-                setDeferredPrompt(null);
-                setIsInstalled(true);
+        <div className="lg:hidden fixed top-20 right-4 z-[100] flex items-center gap-1">
+          <button 
+            onClick={async () => {
+              if (deferredPrompt) {
+                deferredPrompt.prompt();
+                const { outcome } = await deferredPrompt.userChoice;
+                if (outcome === 'accepted') {
+                  setDeferredPrompt(null);
+                  setIsInstalled(true);
+                  localStorage.setItem('cr_app_installed', 'true');
+                }
+              } else {
+                alert("App is ready to install! Tap your browser menu (3 dots) and select 'Install App' or 'Add to Home Screen'.");
               }
-            } else {
-              alert("App is ready to install! Tap your browser menu (3 dots) and select 'Install App' or 'Add to Home Screen'.");
-            }
-          }}
-          className="lg:hidden fixed top-20 right-4 z-[100] bg-blue-600 text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 animate-bounce"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
-          Download App
-        </button>
+            }}
+            className="bg-blue-600 text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 animate-bounce"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+            Download App
+          </button>
+          <button 
+            onClick={() => {
+              setIsInstalled(true);
+              localStorage.setItem('cr_app_installed', 'true');
+            }}
+            className="bg-white text-slate-400 hover:text-slate-600 p-1.5 rounded-full shadow-xl border border-slate-100"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+          </button>
+        </div>
       )}
 
       {/* Mobile Top Nav */}
@@ -232,18 +257,24 @@ const App: React.FC = () => {
         </button>
       </div>
 
-      <Sidebar 
-        activeTab={activeTab} 
-        setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
-        isOpen={isSidebarOpen}
-        onClose={() => setIsSidebarOpen(false)}
-        onExit={handleExitDashboard}
-        user={currentUser}
-      />
-      
-      <main className="flex-1 p-4 lg:p-10 pt-24 lg:pt-10 overflow-y-auto max-h-screen">
-        <div className="max-w-6xl mx-auto">{renderContent()}</div>
-      </main>
+      <Suspense fallback={<div className="flex items-center justify-center h-screen w-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+        <Sidebar 
+          activeTab={activeTab} 
+          setActiveTab={(tab) => { setActiveTab(tab); setIsSidebarOpen(false); }} 
+          isOpen={isSidebarOpen}
+          onClose={() => setIsSidebarOpen(false)}
+          onExit={handleExitDashboard}
+          user={currentUser}
+        />
+        
+        <main className="flex-1 p-4 lg:p-10 pt-24 lg:pt-10 overflow-y-auto max-h-screen">
+          <div className="max-w-6xl mx-auto">
+            <Suspense fallback={<div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div></div>}>
+              {renderContent()}
+            </Suspense>
+          </div>
+        </main>
+      </Suspense>
       
       {isSidebarOpen && (
         <div className="fixed inset-0 bg-slate-900/60 z-[90] lg:hidden" onClick={() => setIsSidebarOpen(false)} />
