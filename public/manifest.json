@@ -5,6 +5,18 @@
   "start_url": "/",
   "display": "standalone",
   "display_override": ["tabbed", "window-controls-overlay", "minimal-ui"],
+  "tab_strip": {
+    "home_tab": {
+      "icons": [
+        {
+          "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ],
+      "visibility": "auto"
+    }
+  },
   "background_color": "#f8fafc",
   "theme_color": "#2563eb",
   "description": "The ultimate high-performance cold outreach platform for lead generation and sales automation.",
@@ -24,13 +36,22 @@
   "iarc_rating_id": "e84b0fa5-e9ac-471f-9513-112447c9958b",
   "scope_extensions": [
     {
-      "origin": "*.run.app"
+      "origin": "https://*.run.app"
+    },
+    {
+      "origin": "https://*.google.com"
     }
   ],
   "icons": [
     {
       "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
       "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "https://dummyimage.com/512x512/2563eb/ffffff.png",
+      "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
@@ -67,7 +88,8 @@
         {
           "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/png",
+          "purpose": "any"
         }
       ]
     },
@@ -80,7 +102,8 @@
         {
           "src": "https://dummyimage.com/192x192/2563eb/ffffff.png",
           "sizes": "192x192",
-          "type": "image/png"
+          "type": "image/png",
+          "purpose": "any"
         }
       ]
     }
