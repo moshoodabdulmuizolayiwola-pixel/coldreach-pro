@@ -91,6 +91,15 @@ const App: React.FC = () => {
     localStorage.setItem('cr_pro_active_tab_v2', activeTab);
   }, [activeTab]);
 
+  useEffect(() => {
+    const handleBeforeInstallPrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+  }, []);
+
   // --- ACTIONS ---
 
   const handleEnterPlatform = (mode: 'login' | 'signup') => {
@@ -175,14 +184,16 @@ const App: React.FC = () => {
     <div className="flex min-h-screen bg-slate-50 text-slate-800">
       {/* Download App Floating Button (Mobile/Tablet only) */}
       <button 
-        onClick={() => {
-          // Real APK download to device
-          const link = document.createElement('a');
-          link.href = '/ColdReachPro.apk'; // Ensure you place ColdReachPro.apk in your public folder
-          link.download = 'ColdReachPro.apk';
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
+        onClick={async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const { outcome } = await deferredPrompt.userChoice;
+            if (outcome === 'accepted') {
+              setDeferredPrompt(null);
+            }
+          } else {
+            alert("App is ready to install! Tap your browser menu (3 dots) and select 'Install App' or 'Add to Home Screen'.");
+          }
         }}
         className="lg:hidden fixed top-20 right-4 z-[100] bg-blue-600 text-white px-4 py-2 rounded-full shadow-xl text-xs font-bold flex items-center gap-2 animate-bounce"
       >

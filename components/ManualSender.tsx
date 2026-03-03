@@ -12,7 +12,6 @@ interface ManualSenderProps {
 
 const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUpdate, user }) => {
   const [filter, setFilter] = useState<'all' | LeadStatus.TO_SEND | LeadStatus.SENT>('all');
-  const [processingLeads, setProcessingLeads] = useState<Set<string>>(new Set());
   const processingRef = useRef<Set<string>>(new Set());
   
   const filteredLeads = useMemo(() => 
@@ -24,29 +23,23 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
    * Priority: Browser Action (Link Opening) must be immediate.
    */
   const handleSend = useCallback((lead: Lead) => {
-    // 1. Instant lock (bypasses React render cycle)
+    // 1. Instant lock (bypasses React render cycle completely)
     if (processingRef.current.has(lead.id)) return;
     processingRef.current.add(lead.id);
 
     // 2. Instant calculation
     const outreachUrl = buildGmailComposeLink(lead, campaign.subject, campaign.body);
     
-    // 3. IMMEDIATE TRIGGER: Fire intent BEFORE any React state updates
+    // 3. IMMEDIATE TRIGGER: Fire intent reliably
     if (outreachUrl.startsWith('mailto:')) {
-      // Use hidden iframe to prevent page unload/reload lag (makes it < 1ms)
-      const iframe = document.createElement('iframe');
-      iframe.style.display = 'none';
-      iframe.src = outreachUrl;
-      document.body.appendChild(iframe);
-      setTimeout(() => document.body.removeChild(iframe), 1000);
+      // Standard location.href is the most reliable way to trigger mailto without browser blocking
+      window.location.href = outreachUrl;
     } else {
       const newWin = window.open(outreachUrl, '_blank');
       if (!newWin) window.location.href = outreachUrl;
     }
     
     // 4. Update UI state asynchronously so it doesn't block the intent
-    setProcessingLeads(prev => new Set(prev).add(lead.id));
-    
     setTimeout(() => {
       onStatusUpdate(lead.id, LeadStatus.SENT);
       
@@ -65,13 +58,8 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
       
       setTimeout(() => {
         processingRef.current.delete(lead.id);
-        setProcessingLeads(prev => {
-          const next = new Set(prev);
-          next.delete(lead.id);
-          return next;
-        });
       }, 1000);
-    }, 10);
+    }, 50);
   }, [campaign.subject, campaign.body, onStatusUpdate, user.id]);
 
   const handleBrowse = useCallback((lead: Lead) => {
@@ -81,8 +69,6 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
     const url = lead.website?.startsWith('http') ? lead.website : `https://${lead.website}`;
     window.open(url, '_blank');
 
-    setProcessingLeads(prev => new Set(prev).add(lead.id));
-
     setTimeout(() => {
       onStatusUpdate(lead.id, LeadStatus.SENT);
       
@@ -101,13 +87,8 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
       
       setTimeout(() => {
         processingRef.current.delete(lead.id);
-        setProcessingLeads(prev => {
-          const next = new Set(prev);
-          next.delete(lead.id);
-          return next;
-        });
       }, 1000);
-    }, 10);
+    }, 50);
   }, [onStatusUpdate, user.id]);
 
   const formatDate = (dateStr?: string) => {
@@ -163,27 +144,17 @@ const ManualSender: React.FC<ManualSenderProps> = ({ leads, campaign, onStatusUp
                             {lead.website && !lead.email && (
                               <button 
                                 onClick={() => handleBrowse(lead)}
-                                disabled={processingLeads.has(lead.id)}
-                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition active:scale-95 ${
-                                  processingLeads.has(lead.id) 
-                                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
-                                    : 'bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800'
-                                }`}
+                                className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition active:scale-95 bg-slate-900 text-white shadow-slate-200 hover:bg-slate-800"
                               >
-                                {processingLeads.has(lead.id) ? 'Opening...' : 'Open Browser'}
+                                Open Browser
                               </button>
                             )}
                             {lead.email && (
                               <button 
                                 onClick={() => handleSend(lead)} 
-                                disabled={processingLeads.has(lead.id)}
-                                className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition active:scale-95 ${
-                                  processingLeads.has(lead.id) 
-                                    ? 'bg-slate-300 text-slate-500 cursor-not-allowed shadow-none' 
-                                    : 'bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700'
-                                }`}
+                                className="px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition active:scale-95 bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700"
                               >
-                                {processingLeads.has(lead.id) ? 'Sending...' : 'Send Email'}
+                                Send Email
                               </button>
                             )}
                           </>
