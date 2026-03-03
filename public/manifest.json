@@ -34,14 +34,6 @@
     }
   ],
   "iarc_rating_id": "e84b0fa5-e9ac-471f-9513-112447c9958b",
-  "scope_extensions": [
-    {
-      "origin": "https://ais-pre-qczy7wurnzncjmob3nojep-501390134835.europe-west2.run.app"
-    },
-    {
-      "origin": "https://auth.coldreach.com"
-    }
-  ],
   "handle_links": "preferred",
   "icons": [
     {
