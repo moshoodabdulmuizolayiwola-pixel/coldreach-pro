@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useCallback, useRef } from 'react';
 import { Lead, LeadStatus, User } from '../types.ts';
-import { buildGmailComposeLink } from '../services/geminiService.ts';
+import { buildGmailComposeLink } from '../services/emailService.ts';
 
 interface ManualSenderProps {
   leads: Lead[];

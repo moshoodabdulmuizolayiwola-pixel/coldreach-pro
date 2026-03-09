@@ -1,5 +1,4 @@
 
-import { GoogleGenAI, Type } from "@google/genai";
 import { Lead, PlanStatus, PersonalizationResult } from "../types.ts";
 
 const PUBLIC_PROVIDERS = [
@@ -162,64 +161,12 @@ export const personalizeEmail = async (
   const subjRes = basicReplace(subjectTemplate, lead);
   const bodyRes = basicReplace(bodyTemplate, lead);
 
-  if (plan === PlanStatus.FREE || !process.env.API_KEY) {
-    return {
-      finalSubject: subjRes.result,
-      finalBody: bodyRes.result,
-      personalizationLevel: 0,
-      replacedVariables: [...subjRes.replaced, ...bodyRes.replaced],
-      missingVariables: [...subjRes.missing, ...bodyRes.missing],
-      accessLevel: plan
-    };
-  }
-
-  try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-    const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
-      contents: `
-        Task: Enhance this cold email slightly while replacing variables.
-        Rules:
-        1. Only use lead data: Name=${lead.firstName}, Company=${lead.companyName}, Platform=${lead.platform}.
-        2. Keep tone professional.
-        3. Plain text only.
-
-        Subject Template: ${subjectTemplate}
-        Body Template: ${bodyTemplate}
-      `,
-      config: {
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            finalSubject: { type: Type.STRING },
-            finalBody: { type: Type.STRING }
-          },
-          required: ["finalSubject", "finalBody"],
-          propertyOrdering: ["finalSubject", "finalBody"]
-        }
-      }
-    });
-
-    const jsonStr = (response.text || "").trim();
-    const data = JSON.parse(jsonStr || "{}");
-    
-    return {
-      finalSubject: data.finalSubject || subjRes.result,
-      finalBody: data.finalBody || bodyRes.result,
-      personalizationLevel: 1,
-      replacedVariables: [...subjRes.replaced, ...bodyRes.replaced],
-      missingVariables: [...subjRes.missing, ...bodyRes.missing],
-      accessLevel: PlanStatus.PAID
-    };
-  } catch (err) {
-    return {
-      finalSubject: subjRes.result,
-      finalBody: bodyRes.result,
-      personalizationLevel: 0,
-      replacedVariables: [...subjRes.replaced, ...bodyRes.replaced],
-      missingVariables: [...subjRes.missing, ...bodyRes.missing],
-      accessLevel: PlanStatus.PAID
-    };
-  }
+  return {
+    finalSubject: subjRes.result,
+    finalBody: bodyRes.result,
+    personalizationLevel: 0,
+    replacedVariables: [...subjRes.replaced, ...bodyRes.replaced],
+    missingVariables: [...subjRes.missing, ...bodyRes.missing],
+    accessLevel: plan
+  };
 };

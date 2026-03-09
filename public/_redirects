@@ -1,1 +1,4 @@
+/api/auth/url /.netlify/functions/api-auth-url 200
+/api/send-email /.netlify/functions/send-email 200
+/api/* /.netlify/functions/api 200
 /* /index.html 200

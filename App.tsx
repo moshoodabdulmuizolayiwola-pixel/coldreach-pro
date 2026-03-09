@@ -8,6 +8,7 @@ const Dashboard = lazy(() => import('./components/Dashboard.tsx'));
 const LeadManagement = lazy(() => import('./components/LeadManagement.tsx'));
 const CampaignBuilder = lazy(() => import('./components/CampaignBuilder.tsx'));
 const ManualSender = lazy(() => import('./components/ManualSender.tsx'));
+const AutoSendView = lazy(() => import('./components/AutoSendView.tsx'));
 const Settings = lazy(() => import('./components/Settings.tsx'));
 const LandingPage = lazy(() => import('./components/LandingPage.tsx'));
 const AuthForms = lazy(() => import('./components/AuthForms.tsx'));
@@ -201,6 +202,8 @@ const App: React.FC = () => {
         return <CampaignBuilder plan={userPlan} campaign={campaign} setCampaign={setCampaign} />;
       case 'manual-send':
         return <ManualSender leads={leads} campaign={campaign} onStatusUpdate={updateLeadStatus} user={currentUser} />;
+      case 'auto-send':
+        return <AutoSendView campaign={campaign} />;
       case 'settings':
         return <Settings plan={userPlan} setPlan={setUserPlan} user={currentUser} onRefresh={() => {}} onUpdateUser={handleUpdateUser} />;
       default:

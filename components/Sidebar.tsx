@@ -17,6 +17,7 @@ const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab, isOpen, onCl
     { id: 'leads', label: 'Lead List', icon: '👥' },
     { id: 'campaigns', label: 'Campaigns', icon: '✉️' },
     { id: 'manual-send', label: 'Manual View', icon: '🖱️' },
+    { id: 'auto-send', label: 'Auto-Send View', icon: '🚀' },
     { id: 'settings', label: 'Settings', icon: '⚙️' },
   ];
 

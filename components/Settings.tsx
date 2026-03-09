@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlanStatus, User, OAuthProvider } from '../types.ts';
 
 declare global {
@@ -18,40 +18,68 @@ interface SettingsProps {
 
 const Settings: React.FC<SettingsProps> = ({ plan, setPlan, user, onRefresh, onUpdateUser }) => {
   const [isVerifying, setIsVerifying] = useState(false);
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   
   // Modal Form State
-  const [newProvider, setNewProvider] = useState({
-    name: 'Google',
-    clientId: '',
-    clientSecret: ''
-  });
+  const [accounts, setAccounts] = useState<any[]>([]);
+
+  useEffect(() => {
+    fetchAccounts();
+  }, []);
+
+  const fetchAccounts = async () => {
+    try {
+      const res = await fetch('/api/accounts');
+      if (res.ok) {
+        const data = await res.json();
+        setAccounts(data);
+        // Also update user.authProviders to keep it in sync for the limit check
+        const providers = data.map((acc: any) => ({
+          id: acc.id.toString(),
+          name: acc.email,
+          clientId: '',
+          clientSecret: '',
+          status: acc.is_warming_up ? 'active' : 'idle',
+          createdAt: new Date().toISOString()
+        }));
+        onUpdateUser({ authProviders: providers });
+      }
+    } catch (error) {
+      console.error('Failed to fetch accounts:', error);
+    }
+  };
+
+  // Listen for OAuth success message
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+        fetchAccounts();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('oauth_channel');
+      bc.onmessage = (event) => {
+        if (event.data?.type === 'OAUTH_AUTH_SUCCESS') {
+          fetchAccounts();
+        }
+      };
+    } catch (e) {
+      console.error('BroadcastChannel not supported', e);
+    }
+    
+    return () => {
+      window.removeEventListener('message', handleMessage);
+      if (bc) bc.close();
+    };
+  }, []);
 
   const PAYSTACK_PUBLIC_KEY = 'pk_test_d810687c8c01e0a7c4ec5e1e272ef55cbc9f93d9';
 
   const daysRemaining = user.subscriptionExpiry 
     ? Math.max(0, Math.ceil((new Date(user.subscriptionExpiry).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24)))
     : 0;
-
-  const handleInstallProvider = () => {
-    if (!newProvider.clientId || !newProvider.clientSecret) return;
-
-    const provider: OAuthProvider = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newProvider.name,
-      clientId: newProvider.clientId,
-      clientSecret: newProvider.clientSecret,
-      status: 'active',
-      createdAt: new Date().toISOString()
-    };
-
-    const updatedProviders = [...(user.authProviders || []), provider];
-    onUpdateUser({ authProviders: updatedProviders });
-    
-    // Reset and close
-    setNewProvider({ name: 'Google', clientId: '', clientSecret: '' });
-    setIsAuthModalOpen(false);
-  };
 
   const handleUpgradeToPro = () => {
     if (!window.PaystackPop) {
@@ -157,135 +185,102 @@ const Settings: React.FC<SettingsProps> = ({ plan, setPlan, user, onRefresh, onU
 
       {/* Inbox Management Section */}
       <section>
-        <div className="flex justify-between items-center mb-8">
-           <h2 className="text-2xl font-black text-slate-900 tracking-tight">Connected Accounts</h2>
-           {plan === PlanStatus.PAID && (
-             <button 
-               onClick={() => setIsAuthModalOpen(true)}
-               className="bg-blue-600 text-white px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-blue-100 hover:bg-blue-700 transition"
-             >
-               + Connect Provider
-             </button>
-           )}
+        <div className="flex justify-between items-center mb-4">
+           <div>
+             <h2 className="text-2xl font-black text-slate-900 tracking-tight">Connected Accounts</h2>
+             <p className="text-slate-500 text-sm font-bold mt-1">Connect your Gmail accounts to enable automated sending and warm-up features. You can connect up to 2,000 accounts.</p>
+           </div>
+           <button 
+             onClick={async () => {
+               try {
+                 const redirectUri = `${window.location.origin}/oauth2callback`;
+                 const response = await fetch(`/api/auth/url?redirect_uri=${encodeURIComponent(redirectUri)}`);
+                 if (!response.ok) throw new Error(`Failed to get auth URL: ${response.status} ${response.statusText}`);
+                 const { url } = await response.json();
+                 
+                 const authWindow = window.open(url, 'oauth_popup', 'width=600,height=700');
+                 if (!authWindow) {
+                   alert('Please allow popups for this site to connect your account.');
+                   return;
+                 }
+               } catch (err: any) {
+                 console.error('Failed to open auth window', err);
+                 alert(`Failed to connect: ${err.message || 'Unknown error'}. Please try again.`);
+               }
+             }}
+             disabled={(user.authProviders?.length || 0) >= 2000}
+             className={`px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl transition flex-shrink-0 ${
+               (user.authProviders?.length || 0) >= 2000 
+                 ? 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none' 
+                 : 'bg-blue-600 text-white shadow-blue-100 hover:bg-blue-700'
+             }`}
+           >
+             { (user.authProviders?.length || 0) >= 2000 ? 'Limit Reached (2000)' : '+ Connect Gmail' }
+           </button>
         </div>
-        {plan === PlanStatus.FREE ? (
-          <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-[2.5rem] p-20 text-center">
-            <div className="text-5xl mb-8 grayscale opacity-30">🔐</div>
-            <h4 className="text-xl font-black text-slate-800 mb-3">Professional Feature Locked</h4>
-            <p className="text-slate-500 text-sm font-bold uppercase tracking-widest text-[10px] mb-10 max-w-xs mx-auto">Connect multiple accounts to bypass daily sending limits.</p>
-            <button onClick={handleUpgradeToPro} className="bg-slate-900 text-white px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px] shadow-2xl hover:bg-slate-800 transition">Unlock Pro Now</button>
-          </div>
-        ) : (
-          <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-100/50">
-             <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
-                  <th className="px-10 py-6">Provider / ID</th>
-                  <th className="px-10 py-6">Client ID</th>
-                  <th className="px-10 py-6">Status</th>
+        
+        <div className="bg-white border border-slate-200 rounded-[2rem] overflow-hidden shadow-2xl shadow-slate-100/50 mt-8">
+           <table className="w-full text-left">
+            <thead>
+              <tr className="bg-slate-50/50 text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] border-b border-slate-100">
+                <th className="px-10 py-6">Email Address</th>
+                <th className="px-10 py-6">Status</th>
+                <th className="px-10 py-6 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 text-[11px] font-bold">
+              {(!user.authProviders || user.authProviders.length === 0) ? (
+                <tr>
+                  <td colSpan={3} className="px-10 py-12 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No Gmail accounts connected yet.</td>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-[11px] font-bold">
-                {(!user.authProviders || user.authProviders.length === 0) ? (
-                  <tr>
-                    <td colSpan={3} className="px-10 py-12 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">No OAuth providers installed yet.</td>
+              ) : (
+                user.authProviders.map((p) => (
+                  <tr key={p.id} className="hover:bg-slate-50 transition">
+                    <td className="px-10 py-8 text-slate-900 font-medium">
+                       {p.name}
+                    </td>
+                    <td className="px-10 py-8">
+                       <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${p.status === 'active' ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
+                         {p.status === 'active' ? 'Warming Up' : 'Idle'}
+                       </span>
+                    </td>
+                    <td className="px-10 py-8 text-right space-x-3">
+                       <button 
+                         onClick={() => {
+                           // Toggle warmup status
+                           const updatedProviders = user.authProviders?.map(provider => 
+                             provider.id === p.id ? { ...provider, status: provider.status === 'active' ? 'idle' : 'active' } : provider
+                           );
+                           onUpdateUser({ authProviders: updatedProviders });
+                           fetch(`/api/accounts/${p.id}/warmup`, {
+                             method: 'POST',
+                             headers: { 'Content-Type': 'application/json' },
+                             body: JSON.stringify({ is_warming_up: p.status !== 'active' })
+                           });
+                         }}
+                         className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition ${p.status === 'active' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'}`}
+                       >
+                         {p.status === 'active' ? 'Stop Warmup' : 'Start Warmup'}
+                       </button>
+                       <button 
+                         onClick={() => {
+                           // Remove account
+                           const updatedProviders = user.authProviders?.filter(provider => provider.id !== p.id);
+                           onUpdateUser({ authProviders: updatedProviders });
+                           fetch(`/api/accounts/${p.id}`, { method: 'DELETE' });
+                         }}
+                         className="bg-rose-50 text-rose-600 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-rose-100 transition"
+                       >
+                         Sign Out
+                       </button>
+                    </td>
                   </tr>
-                ) : (
-                  user.authProviders.map((p) => (
-                    <tr key={p.id} className="hover:bg-slate-50 transition">
-                      <td className="px-10 py-8 text-slate-900 flex items-center gap-3">
-                         <span className={`w-2.5 h-2.5 rounded-full ${p.status === 'active' ? 'bg-emerald-500 animate-pulse' : 'bg-rose-500'}`}></span>
-                         {p.name} Integration
-                      </td>
-                      <td className="px-10 py-8 text-slate-400 uppercase tracking-widest font-black truncate max-w-[200px]">{p.clientId}</td>
-                      <td className="px-10 py-8">
-                         <span className="bg-emerald-50 text-emerald-600 px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest">Verified</span>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-             </table>
-          </div>
-        )}
-      </section>
-
-      {/* MODAL: Install Authentication Provider (As per screenshot) */}
-      {isAuthModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsAuthModalOpen(false)} />
-          
-          {/* THE MODAL CONTAINER */}
-          <div className="relative bg-white w-full max-w-md rounded-lg shadow-2xl p-6 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Header */}
-            <h3 className="text-lg font-medium text-slate-700 mb-6">Install authentication provider</h3>
-            <div className="h-[1px] bg-slate-100 -mx-6 mb-6"></div>
-
-            <div className="space-y-6">
-              {/* Provider Dropdown */}
-              <div>
-                <label className="block text-xs font-bold text-slate-500 mb-1.5 ml-0.5">Provider</label>
-                <div className="relative">
-                  <select 
-                    value={newProvider.name}
-                    onChange={(e) => setNewProvider({...newProvider, name: e.target.value})}
-                    className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-700 outline-none appearance-none cursor-pointer hover:border-slate-400 transition"
-                  >
-                    <option value="Google">Google</option>
-                    <option value="Outlook">Outlook</option>
-                    <option value="SMTP">Custom SMTP</option>
-                  </select>
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7"></path>
-                    </svg>
-                  </div>
-                </div>
-              </div>
-
-              {/* Client ID Field (Focused with Cyan Border like screenshot) */}
-              <div>
-                <input 
-                  type="text"
-                  placeholder=""
-                  value={newProvider.clientId}
-                  onChange={(e) => setNewProvider({...newProvider, clientId: e.target.value})}
-                  className="w-full bg-white border-2 border-[#70f3f3] rounded-md px-3 py-2 text-sm text-slate-800 outline-none shadow-[0_0_0_1px_rgba(112,243,243,0.3)]"
-                  autoFocus
-                />
-              </div>
-
-              {/* Client Secret Field */}
-              <div>
-                <input 
-                  type="password"
-                  placeholder="Secret"
-                  value={newProvider.clientSecret}
-                  onChange={(e) => setNewProvider({...newProvider, clientSecret: e.target.value})}
-                  className="w-full bg-white border border-slate-300 rounded-md px-3 py-2 text-sm text-slate-800 placeholder-slate-400 outline-none hover:border-slate-400 transition focus:border-slate-400"
-                />
-              </div>
-
-              {/* Buttons Area */}
-              <div className="flex gap-3 pt-2">
-                <button 
-                  onClick={handleInstallProvider}
-                  disabled={!newProvider.clientId || !newProvider.clientSecret}
-                  className="bg-[#70f3f3] text-slate-800 px-6 py-2 rounded-md text-sm font-medium hover:brightness-95 transition active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
-                >
-                  Install
-                </button>
-                <button 
-                  onClick={() => setIsAuthModalOpen(false)}
-                  className="bg-[#eef1f5] text-slate-700 px-6 py-2 rounded-md text-sm font-medium hover:bg-[#e4e7eb] transition active:scale-[0.98]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
+                ))
+              )}
+            </tbody>
+           </table>
         </div>
-      )}
+      </section>
     </div>
   );
 };
